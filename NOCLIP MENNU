@@ -1,0 +1,191 @@
+-- Noclip UI + Logic (LocalScript)
+-- Place inside StarterPlayer -> StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+-- ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NoclipUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Name = "Main"
+frame.Size = UDim2.new(0, 220, 0, 110)
+frame.Position = UDim2.new(0.02, 0, 0.7, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+-- Header
+local header = Instance.new("TextLabel")
+header.Size = UDim2.new(1, 0, 0, 28)
+header.BackgroundTransparency = 1
+header.Text = "Noclip Menu"
+header.Font = Enum.Font.GothamBold
+header.TextSize = 16
+header.TextColor3 = Color3.fromRGB(235,235,235)
+header.Parent = frame
+
+-- Toggle Button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "Toggle"
+toggleBtn.Size = UDim2.new(0, 160, 0, 36)
+toggleBtn.Position = UDim2.new(0.06, 0, 0.35, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(40,40,55)
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Font = Enum.Font.GothamSemibold
+toggleBtn.TextSize = 14
+toggleBtn.TextColor3 = Color3.fromRGB(220,220,220)
+toggleBtn.Text = "Enable Noclip (F)"
+toggleBtn.Parent = frame
+
+-- Mobile Toggle Button
+local mobileBtn = Instance.new("TextButton")
+mobileBtn.Name = "MobileToggle"
+mobileBtn.Size = UDim2.new(0, 36, 0, 36)
+mobileBtn.Position = UDim2.new(0.78, 0, 0.35, 0)
+mobileBtn.BackgroundColor3 = Color3.fromRGB(60,60,75)
+mobileBtn.BorderSizePixel = 0
+mobileBtn.Font = Enum.Font.GothamSemibold
+mobileBtn.TextSize = 18
+mobileBtn.TextColor3 = Color3.fromRGB(240,240,240)
+mobileBtn.Text = "⎈"
+mobileBtn.Parent = frame
+mobileBtn.Visible = UserInputService.TouchEnabled
+
+-- Status Label
+local status = Instance.new("TextLabel")
+status.Name = "Status"
+status.Size = UDim2.new(1, -12, 0, 24)
+status.Position = UDim2.new(0, 6, 0.72, 0)
+status.BackgroundTransparency = 1
+status.Font = Enum.Font.Gotham
+status.TextSize = 13
+status.TextColor3 = Color3.fromRGB(190,190,190)
+status.Text = "Status: OFF"
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = frame
+
+-- Status Dot
+local dot = Instance.new("Frame")
+dot.Name = "Dot"
+dot.Size = UDim2.new(0, 12, 0, 12)
+dot.Position = UDim2.new(0.89, 0, 0.72, 0)
+dot.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+dot.BorderSizePixel = 0
+dot.Parent = frame
+
+-- Tween helper
+local function tweenObject(obj, props, time)
+    local info = TweenInfo.new(time or 0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    TweenService:Create(obj, info, props):Play()
+end
+
+-- Noclip logic
+local noclipEnabled = false
+local conn
+
+local function setCollision(character, value)
+    if not character then return end
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.CanCollide = value
+        end
+    end
+end
+
+local function enableNoclip()
+    local char = player.Character
+    if not char then return end
+    setCollision(char, false)
+
+    conn = RunService.RenderStepped:Connect(function()
+        if not player.Character then return end
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = false
+            end
+        end
+    end)
+end
+
+local function disableNoclip()
+    if conn then
+        conn:Disconnect()
+        conn = nil
+    end
+    setCollision(player.Character, true)
+end
+
+local function updateUI()
+    if noclipEnabled then
+        status.Text = "Status: ON"
+        tweenObject(dot, {BackgroundColor3 = Color3.fromRGB(60,200,120)}, 0.12)
+        tweenObject(toggleBtn, {BackgroundColor3 = Color3.fromRGB(30,90,60)}, 0.18)
+        toggleBtn.Text = "Disable Noclip (F)"
+    else
+        status.Text = "Status: OFF"
+        tweenObject(dot, {BackgroundColor3 = Color3.fromRGB(180,50,50)}, 0.12)
+        tweenObject(toggleBtn, {BackgroundColor3 = Color3.fromRGB(40,40,55)}, 0.18)
+        toggleBtn.Text = "Enable Noclip (F)"
+    end
+end
+
+local function toggleNoclip()
+    noclipEnabled = not noclipEnabled
+    if noclipEnabled then
+        enableNoclip()
+    else
+        disableNoclip()
+    end
+    updateUI()
+end
+
+-- Button connections
+toggleBtn.MouseButton1Click:Connect(toggleNoclip)
+mobileBtn.MouseButton1Click:Connect(toggleNoclip)
+
+-- Hotkey
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.F then
+            toggleNoclip()
+        end
+    end
+end)
+
+-- Respawn handling
+player.CharacterAdded:Connect(function(char)
+    task.wait(0.1)
+    if noclipEnabled then
+        enableNoclip()
+    else
+        disableNoclip()
+    end
+end)
+
+-- Double-click header to minimize
+local lastClick = 0
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local now = tick()
+        if now - lastClick < 0.25 then
+            if frame.Size.Y.Offset > 40 then
+                tweenObject(frame, {Size = UDim2.new(0,220,0,38)}, 0.18)
+            else
+                tweenObject(frame, {Size = UDim2.new(0,220,0,110)}, 0.18)
+            end
+        end
+        lastClick = now
+    end
+end)
