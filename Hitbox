@@ -1,0 +1,86 @@
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+--// Variables
+local HitboxEnabled = false
+local MenuOpen = true
+
+--// UI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
+
+-- Main Menu Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 200, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+-- Rainbow Effect
+spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            MainFrame.BackgroundColor3 = Color3.fromHSV(i,1,1)
+            wait(0.05)
+        end
+    end
+end)
+
+-- Close Button inside Main Menu
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 180, 0, 30)
+CloseButton.Position = UDim2.new(0, 10, 0, 110)
+CloseButton.Text = "Close Menu"
+CloseButton.Parent = MainFrame
+
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MenuOpen = false
+end)
+
+-- Toggle Button outside Menu (always visible)
+local ToggleMenuButton = Instance.new("TextButton")
+ToggleMenuButton.Size = UDim2.new(0, 100, 0, 50)
+ToggleMenuButton.Position = UDim2.new(0, 10, 0, 10)
+ToggleMenuButton.Text = "Open Menu"
+ToggleMenuButton.Parent = ScreenGui
+
+ToggleMenuButton.MouseButton1Click:Connect(function()
+    MenuOpen = not MenuOpen
+    MainFrame.Visible = MenuOpen
+end)
+
+-- Hitbox Toggle Button inside Main Menu
+local HitboxButton = Instance.new("TextButton")
+HitboxButton.Size = UDim2.new(0, 180, 0, 50)
+HitboxButton.Position = UDim2.new(0, 10, 0, 10)
+HitboxButton.Text = "Toggle Hitbox"
+HitboxButton.Parent = MainFrame
+
+HitboxButton.MouseButton1Click:Connect(function()
+    HitboxEnabled = not HitboxEnabled
+    if HitboxEnabled then
+        HitboxButton.Text = "Hitbox: ON"
+    else
+        HitboxButton.Text = "Hitbox: OFF"
+    end
+end)
+
+--// Hitbox Function
+RunService.RenderStepped:Connect(function()
+    if HitboxEnabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                hrp.Size = Vector3.new(10,10,10) -- bigger hitbox
+                hrp.Transparency = 0.5
+            end
+        end
+    end
+end)
