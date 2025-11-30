@@ -1,0 +1,8 @@
+-- LocalScript inside StarterPlayerScripts
+
+local cam = workspace.CurrentCamera
+
+-- set FOV to 200
+cam.FieldOfView = 200
+
+print("FOV set to 200!")
